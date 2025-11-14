@@ -1,0 +1,1979 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>케이팝 데몬 헌터스 리듬 게임</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* 배경 이펙트 */
+        .background-effects {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .light-beam {
+            position: absolute;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: beam 3s infinite;
+        }
+
+        @keyframes beam {
+            0% { transform: translateX(0) rotate(0deg); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateX(100vw) rotate(360deg); opacity: 0; }
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            animation: particle 5s infinite;
+        }
+
+        @keyframes particle {
+            0% { transform: translateY(100vh) translateX(0); opacity: 1; }
+            100% { transform: translateY(-100vh) translateX(100px); opacity: 0; }
+        }
+
+        /* 메인 메뉴 */
+        #main-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            color: white;
+        }
+
+        .menu-title {
+            font-size: 4rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            margin-bottom: 2rem;
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
+            to { text-shadow: 0 0 30px rgba(255, 255, 255, 0.8), 0 0 40px rgba(255, 255, 255, 0.6); }
+        }
+
+        .menu-section {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 2rem;
+            border-radius: 20px;
+            margin: 1rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .menu-section h2 {
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .song-list, .difficulty-list {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .song-item, .difficulty-item {
+            padding: 1rem 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.2rem;
+        }
+
+        .song-item:hover, .difficulty-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: white;
+            transform: scale(1.05);
+        }
+
+        .song-item.selected, .difficulty-item.selected {
+            background: rgba(255, 215, 0, 0.3);
+            border-color: gold;
+            box-shadow: 0 0 20px gold;
+        }
+
+        .speed-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        #speed-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        #speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            transition: all 0.3s;
+        }
+
+        #speed-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+        }
+
+        #speed-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            transition: all 0.3s;
+        }
+
+        #speed-slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+        }
+
+        .speed-display {
+            font-size: 1.5rem;
+            color: white;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .start-button {
+            margin-top: 2rem;
+            padding: 1rem 3rem;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .start-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .start-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 게임 화면 */
+        #game-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .score-info {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .combo-display {
+            font-size: 2rem;
+            color: gold;
+            text-shadow: 0 0 10px gold;
+        }
+
+        .game-area {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding: 2rem;
+            position: relative;
+        }
+
+        /* 캐릭터 영역 */
+        .character-area {
+            position: absolute;
+            bottom: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 2rem;
+            z-index: 5;
+        }
+
+        .character {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+            animation: characterIdle 2s infinite ease-in-out;
+            position: relative;
+        }
+
+        .character::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle, transparent 40%, rgba(255, 255, 255, 0.3) 100%);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes characterIdle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0; }
+        }
+
+        .character.dancing {
+            animation: characterDance 0.5s infinite;
+        }
+
+        @keyframes characterDance {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-20px) rotate(-5deg); }
+            75% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        /* 노트 레인 */
+        .note-lanes {
+            display: flex;
+            gap: 10px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .lane {
+            width: 100px;
+            height: 600px;
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        .lane-key {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 80px;
+            background: linear-gradient(to top, rgba(255, 255, 255, 0.3), transparent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+        }
+
+        .lane-key.pressed {
+            background: linear-gradient(to top, rgba(255, 215, 0, 0.5), transparent);
+            box-shadow: 0 -5px 30px rgba(255, 215, 0, 0.8);
+        }
+
+        /* 노트 */
+        .note {
+            position: absolute;
+            width: 90px;
+            height: 30px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 5px;
+            left: 5px;
+            top: -30px;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+            z-index: 3;
+            opacity: 0;
+            will-change: transform;
+        }
+
+        .note.falling {
+            animation: fall linear;
+            opacity: 1;
+        }
+
+        @keyframes fall {
+            0% { 
+                transform: translateY(0);
+            }
+            100% { 
+                transform: translateY(600px);
+            }
+        }
+
+        .note.hit {
+            animation: hit 0.3s ease-out;
+        }
+
+        @keyframes hit {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        /* 가짜 노트 (반투명) */
+        .note.fake {
+            opacity: 0.6;
+            background: linear-gradient(135deg, rgba(240, 147, 251, 0.5) 0%, rgba(245, 87, 108, 0.5) 100%);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+            pointer-events: none;
+        }
+
+
+        /* 판정 */
+        .judgment {
+            position: absolute;
+            font-size: 3rem;
+            font-weight: bold;
+            z-index: 10;
+            pointer-events: none;
+            animation: judgmentPop 1s ease-out forwards;
+        }
+
+        .judgment.perfect {
+            color: gold;
+            text-shadow: 0 0 20px gold;
+        }
+
+        .judgment.good {
+            color: #4ade80;
+            text-shadow: 0 0 20px #4ade80;
+        }
+
+        .judgment.miss {
+            color: #ef4444;
+            text-shadow: 0 0 20px #ef4444;
+        }
+
+        @keyframes judgmentPop {
+            0% { transform: translateY(0) scale(0.5); opacity: 1; }
+            100% { transform: translateY(-100px) scale(1.5); opacity: 0; }
+        }
+
+        /* 결과 화면 */
+        #result-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            color: white;
+            z-index: 20;
+        }
+
+        .result-content {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 3rem;
+            border-radius: 20px;
+            border: 2px solid gold;
+            box-shadow: 0 0 50px gold;
+        }
+
+        .result-title {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: gold;
+        }
+
+        .result-status {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .result-status.success {
+            color: #4ade80;
+            background: rgba(74, 222, 128, 0.2);
+            border: 2px solid #4ade80;
+            box-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
+        }
+
+        .result-status.failure {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.2);
+            border: 2px solid #ef4444;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+        }
+
+        .result-stats {
+            font-size: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .result-button {
+            margin-top: 2rem;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .result-button:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- 배경 이펙트 -->
+    <div class="background-effects" id="background-effects"></div>
+
+    <!-- 메인 메뉴 -->
+    <div id="main-menu">
+        <h1 class="menu-title">케이팝 데몬 헌터스</h1>
+        
+        <div class="menu-section">
+            <h2>곡 선택</h2>
+            <div class="song-list">
+                <div class="song-item" data-song="golden.mp3">Golden</div>
+                <div class="song-item" data-song="how it's done.mp3">How It's Done</div>
+                <div class="song-item" data-song="Takedown.mp4">Takedown</div>
+                <div class="song-item" data-song="Soda Pop.mp3">Soda Pop</div>
+                <div class="song-item" data-song="Your Idol.mp4">Your Idol</div>
+                <div class="song-item" data-song="Free.mp4">Free</div>
+                <div class="song-item" data-song="What it sound like.mp4">What it sound like</div>
+            </div>
+            
+            <h2 style="margin-top: 2rem;">난이도</h2>
+            <div class="difficulty-list">
+                <div class="difficulty-item" data-difficulty="easy">Easy</div>
+                <div class="difficulty-item" data-difficulty="normal">Normal</div>
+                <div class="difficulty-item" data-difficulty="hard">Hard</div>
+                <div class="difficulty-item" data-difficulty="superhard">Super Hard</div>
+            </div>
+            
+            <h2 style="margin-top: 2rem;">배속</h2>
+            <div class="speed-control">
+                <input type="range" id="speed-slider" min="0.25" max="2.0" step="0.05" value="1.0">
+                <div class="speed-display">
+                    <span id="speed-value">1.0x</span>
+                </div>
+            </div>
+        </div>
+
+        <button class="start-button" id="start-button" disabled>게임 시작</button>
+    </div>
+
+    <!-- 게임 화면 -->
+    <div id="game-screen">
+        <div class="game-header">
+            <div class="score-info">
+                점수: <span id="score">0</span>
+            </div>
+            <div class="combo-display" id="combo-display"></div>
+            <div class="score-info">
+                정확도: <span id="accuracy">100%</span>
+            </div>
+            <div class="score-info" id="lives-display">
+                목숨: <span id="lives">10</span>
+            </div>
+        </div>
+
+        <div class="game-area">
+            <video id="game-video" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; opacity: 0.6;"></video>
+            <div class="note-lanes" id="note-lanes">
+                <div class="lane" data-key="a">
+                    <div class="lane-key" id="key-a">A</div>
+                </div>
+                <div class="lane" data-key="s">
+                    <div class="lane-key" id="key-s">S</div>
+                </div>
+                <div class="lane" data-key="d">
+                    <div class="lane-key" id="key-d">D</div>
+                </div>
+                <div class="lane" data-key="f">
+                    <div class="lane-key" id="key-f">F</div>
+                </div>
+            </div>
+        </div>
+
+        <audio id="game-audio" preload="auto"></audio>
+    </div>
+
+    <!-- 결과 화면 -->
+    <div id="result-screen">
+        <div class="result-content">
+            <h1 class="result-title">결과</h1>
+            <div class="result-status" id="result-status"></div>
+            <div class="result-stats">
+                <div>최종 점수: <span id="final-score">0</span></div>
+                <div>정확도: <span id="final-accuracy">0%</span></div>
+                <div>최대 콤보: <span id="max-combo">0</span></div>
+                <div>Perfect: <span id="perfect-count">0</span></div>
+                <div>Good: <span id="good-count">0</span></div>
+                <div>Miss: <span id="miss-count">0</span></div>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button class="result-button" id="retry-button">다시하기</button>
+                <button class="result-button" id="back-to-menu">메뉴로 돌아가기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 게임 상태
+        const gameState = {
+            selectedSong: null,
+            difficulty: null,
+            score: 0,
+            combo: 0,
+            maxCombo: 0,
+            perfectCount: 0,
+            goodCount: 0,
+            missCount: 0,
+            totalNotes: 0,
+            notes: [],
+            activeNotes: [],
+            audio: null,
+            video: null,
+            gameStartTime: 0,
+            audioStartTime: 0,
+            audioOffset: 0,
+            lives: 10,  // 목숨 시스템
+            maxLives: 10,
+            isGameOver: false,  // 게임 오버 여부
+            notesGenerated: false,  // 노트 생성 플래그
+            noteCheckInterval: null,  // 노트 체크 인터벌
+            playbackRate: 1.0,  // 배속 (기본값 1.0)
+            keys: ['a', 's', 'd', 'f'],
+            keyMap: {
+                'a': 0,
+                's': 1,
+                'd': 2,
+                'f': 3
+            },
+            pressedKeys: new Set()  // 현재 눌려있는 키들
+        };
+
+        // 난이도별 노트 간격 (밀리초)
+        // BPM 128 기준 (4/4 박자), 1 beat = 468.75ms (60/128*1000)
+        // 더 정확한 박자 동기화를 위해 BPM 128 사용 (일반적인 K-POP BPM)
+        const BPM = 128;
+        const BEAT_INTERVAL = (60 / BPM) * 1000; // 약 468.75ms
+        
+        const difficultySettings = {
+            easy: { beatInterval: BEAT_INTERVAL * 2, noteSpeed: 2.5, notesPerBeat: 0.5, fallDuration: 2.0 },  // 매 2박마다
+            normal: { beatInterval: BEAT_INTERVAL, noteSpeed: 2.5, notesPerBeat: 1, fallDuration: 2.0 },  // 매 박마다
+            hard: { beatInterval: BEAT_INTERVAL * 0.85, noteSpeed: 2.2, notesPerBeat: 1.25, fallDuration: 2.8 },  // 매 박마다 (난이도 낮춤)
+            superhard: { beatInterval: BEAT_INTERVAL / 2, noteSpeed: 1, notesPerBeat: 1.5, fallDuration: 1.0 }  // 매 반박마다 (노트 수 줄임)
+        };
+
+        // 곡별 박자 패턴 정의
+        const songConfigs = {
+            'golden.mp3': {
+                patterns: [
+                    [0, 1, 2, 3],  // A-S-D-F 순서
+                    [0, 1, 0, 2],  // A-S-A-D 패턴
+                    [3, 1, 2, 0],  // F-S-D-A 패턴
+                    [1, 3, 2, 0],  // S-F-D-A 패턴
+                    [0, 2, 1, 3]   // A-D-S-F 크로스
+                ],
+                patternChangeBeats: 6,  // 6박자마다 패턴 변경
+                bpm: 130,  // 곡의 실제 BPM
+                style: 'sequential'  // 순차적 스타일
+            },
+            "how it's done.mp3": {
+                patterns: [
+                    [0, 2, 1, 3],  // A-D-S-F 크로스 패턴
+                    [3, 2, 1, 0],  // F-D-S-A 역순 패턴
+                    [1, 0, 3, 2],  // S-A-F-D 패턴
+                    [2, 3, 0, 1],  // D-F-A-S 패턴
+                    [0, 1, 3, 2]   // A-S-F-D 패턴
+                ],
+                patternChangeBeats: 4,  // 4박자마다 패턴 변경
+                bpm: 125,  // 곡의 실제 BPM
+                style: 'cross'  // 크로스 스타일
+            },
+            'Takedown.mp4': {
+                patterns: [
+                    [0, 3, 1, 2],  // A-F-S-D 패턴
+                    [2, 0, 3, 1],  // D-A-F-S 패턴
+                    [1, 2, 0, 3],  // S-D-A-F 패턴
+                    [3, 1, 2, 0],  // F-S-D-A 패턴
+                    [0, 1, 2, 3],  // A-S-D-F 순서
+                    [2, 3, 1, 0]   // D-F-S-A 패턴
+                ],
+                patternChangeBeats: 5,  // 5박자마다 패턴 변경
+                bpm: 132,  // 곡의 실제 BPM (일반적으로 빠른 곡)
+                style: 'intense'  // 강렬한 스타일
+            },
+            'Soda Pop.mp3': {
+                patterns: [
+                    [1, 2, 0, 3],  // S-D-A-F 패턴
+                    [0, 1, 3, 2],  // A-S-F-D 패턴
+                    [3, 0, 2, 1],  // F-A-D-S 패턴
+                    [2, 3, 1, 0],  // D-F-S-A 패턴
+                    [1, 0, 2, 3],  // S-A-D-F 패턴
+                    [0, 2, 3, 1]   // A-D-F-S 패턴
+                ],
+                patternChangeBeats: 6,  // 6박자마다 패턴 변경
+                bpm: 128,  // 곡의 실제 BPM
+                style: 'energetic'  // 에너지 넘치는 스타일
+            },
+            'Your Idol.mp4': {
+                patterns: [
+                    [0, 1, 2, 3],  // A-S-D-F 순서
+                    [2, 1, 0, 3],  // D-S-A-F 패턴
+                    [3, 0, 1, 2],  // F-A-S-D 패턴
+                    [1, 3, 2, 0],  // S-F-D-A 패턴
+                    [0, 2, 1, 3],  // A-D-S-F 크로스
+                    [3, 2, 0, 1]   // F-D-A-S 패턴
+                ],
+                patternChangeBeats: 7,  // 7박자마다 패턴 변경
+                bpm: 120,  // 곡의 실제 BPM
+                style: 'idol'  // 아이돌 스타일
+            },
+            'Free.mp4': {
+                patterns: [
+                    [0, 3, 2, 1],  // A-F-D-S 패턴
+                    [1, 2, 3, 0],  // S-D-F-A 패턴
+                    [3, 1, 0, 2],  // F-S-A-D 패턴
+                    [2, 0, 1, 3],  // D-A-S-F 패턴
+                    [0, 2, 3, 1],  // A-D-F-S 패턴
+                    [1, 3, 2, 0]   // S-F-D-A 패턴
+                ],
+                patternChangeBeats: 6,  // 6박자마다 패턴 변경
+                bpm: 135,  // 곡의 실제 BPM
+                style: 'free'  // 프리 스타일
+            },
+            'What it sound like.mp4': {
+                patterns: [
+                    [0, 1, 2, 3],  // A-S-D-F 순서
+                    [2, 1, 0, 3],  // D-S-A-F 패턴
+                    [3, 0, 2, 1],  // F-A-D-S 패턴
+                    [1, 3, 0, 2],  // S-F-A-D 패턴
+                    [0, 2, 3, 1],  // A-D-F-S 패턴
+                    [3, 1, 2, 0]   // F-S-D-A 패턴
+                ],
+                patternChangeBeats: 6,  // 6박자마다 패턴 변경
+                bpm: 130,  // 곡의 실제 BPM
+                style: 'sound'  // 사운드 스타일
+            }
+        };
+
+        // 기본 박자 패턴 (곡이 정의되지 않은 경우 사용)
+        const defaultBeatPatterns = [
+            [0, 1, 2, 3],  // 기본 패턴: A-S-D-F 순서
+            [3, 2, 1, 0],  // 역순 패턴: F-D-S-A 순서
+            [0, 2, 1, 3],  // 크로스 패턴
+            [1, 3, 0, 2]   // 교차 패턴
+        ];
+
+        // 배경 이펙트 생성
+        function createBackgroundEffects() {
+            const effectsContainer = document.getElementById('background-effects');
+            
+            // 빛줄기 생성
+            for (let i = 0; i < 5; i++) {
+                const beam = document.createElement('div');
+                beam.className = 'light-beam';
+                beam.style.left = Math.random() * 100 + '%';
+                beam.style.animationDelay = Math.random() * 3 + 's';
+                effectsContainer.appendChild(beam);
+            }
+
+            // 파티클 생성
+            setInterval(() => {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 2 + 's';
+                effectsContainer.appendChild(particle);
+                
+                setTimeout(() => particle.remove(), 5000);
+            }, 500);
+        }
+
+        // 메뉴 이벤트 리스너
+        document.querySelectorAll('.song-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.song-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+                gameState.selectedSong = item.dataset.song;
+                checkStartButton();
+            });
+        });
+
+        document.querySelectorAll('.difficulty-item').forEach(item => {
+            item.addEventListener('click', () => {
+                // 난이도 선택
+                if (item.dataset.difficulty) {
+                    document.querySelectorAll('.difficulty-item[data-difficulty]').forEach(i => i.classList.remove('selected'));
+                    item.classList.add('selected');
+                    gameState.difficulty = item.dataset.difficulty;
+                    checkStartButton();
+                }
+            });
+        });
+
+        // 배속 슬라이더 이벤트
+        const speedSlider = document.getElementById('speed-slider');
+        const speedValue = document.getElementById('speed-value');
+        
+        if (speedSlider && speedValue) {
+            speedSlider.addEventListener('input', (e) => {
+                const value = parseFloat(e.target.value);
+                gameState.playbackRate = value;
+                speedValue.textContent = value.toFixed(2) + 'x';
+            });
+        }
+
+        function checkStartButton() {
+            const button = document.getElementById('start-button');
+            button.disabled = !(gameState.selectedSong && gameState.difficulty);
+        }
+
+        document.getElementById('start-button').addEventListener('click', startGame);
+        document.getElementById('back-to-menu').addEventListener('click', backToMenu);
+        document.getElementById('retry-button').addEventListener('click', retryGame);
+
+        // 게임 시작
+        function startGame() {
+            // 곡과 난이도가 선택되었는지 확인
+            if (!gameState.selectedSong || !gameState.difficulty) {
+                console.error('곡 또는 난이도가 선택되지 않았습니다.');
+                alert('곡과 난이도를 선택해주세요.');
+                return;
+            }
+            
+            console.log('게임 시작:', gameState.selectedSong, gameState.difficulty);
+            
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+            
+            // 게임 상태 초기화
+            gameState.score = 0;
+            gameState.combo = 0;
+            gameState.maxCombo = 0;
+            gameState.perfectCount = 0;
+            gameState.goodCount = 0;
+            gameState.missCount = 0;
+            gameState.totalNotes = 0;
+            gameState.activeNotes = [];
+            gameState.notes = [];
+            gameState.lives = gameState.maxLives;  // 목숨 초기화
+            gameState.isGameOver = false;  // 게임 오버 플래그 초기화
+            gameState.notesGenerated = false;  // 노트 생성 플래그
+            gameState.pressedKeys.clear();  // 눌린 키 초기화
+            
+            // DOM에 남아있는 모든 노트 요소 제거
+            document.querySelectorAll('.note').forEach(note => {
+                note.remove();
+            });
+            
+            // UI 초기화 (목숨 표시 등)
+            updateUI();
+            
+            // 오디오 로드 및 재생
+            const audio = document.getElementById('game-audio');
+            const video = document.getElementById('game-video');
+            
+            // 오디오 요소 초기화 (모든 곡에 공통)
+            audio.pause();
+            audio.currentTime = 0;
+            
+            if (gameState.selectedSong === 'Takedown.mp4' || gameState.selectedSong === 'What it sound like.mp4') {
+                // Takedown: mp4 파일이지만 비디오는 숨기고 오디오만 사용
+                video.src = gameState.selectedSong;
+                video.style.display = 'none';  // 비디오 숨기기
+                video.muted = false;
+                video.volume = 1.0;
+                gameState.video = video;
+                gameState.audio = video;  // 비디오의 오디오 사용
+                
+                // 비디오는 로드하지만 표시하지 않음
+                video.load();
+                
+                video.oncanplaythrough = () => {
+                    // 배속 설정
+                    video.playbackRate = gameState.playbackRate;
+                    
+                    if (!gameState.notesGenerated) {
+                        generateNotes();
+                    }
+                    
+                    // 비디오 재생 시작 (오디오만 들림)
+                    video.play().catch(err => {
+                        console.error('Takedown video play failed:', err);
+                        setTimeout(() => {
+                            video.play().catch(e => {
+                                console.error('Takedown video play retry failed:', e);
+                            });
+                        }, 500);
+                    });
+                };
+                
+                video.onplay = () => {
+                    gameState.audioStartTime = Date.now() - (video.currentTime * 1000);
+                    gameState.gameStartTime = gameState.audioStartTime;
+                };
+                
+                // 비디오 종료 시 결과 화면
+                video.onended = () => {
+                    // 비디오 완전히 정지
+                    video.pause();
+                    video.currentTime = 0;
+                    // 노트 체크 인터벌 제거
+                    if (gameState.noteCheckInterval) {
+                        clearInterval(gameState.noteCheckInterval);
+                        gameState.noteCheckInterval = null;
+                    }
+                    // 이벤트 리스너 제거
+                    window.removeEventListener('keydown', handleKeyPress);
+                    window.removeEventListener('keyup', handleKeyRelease);
+                    // 결과 화면 표시
+                    setTimeout(() => showResult(), 1000);
+                };
+                
+                gameState.audioOffset = 0;
+                
+                // 오디오 요소는 초기화
+                audio.src = '';
+                audio.muted = true;
+            } else {
+                // 다른 곡들: 비디오 파일 사용 (비디오의 오디오 사용)
+                let videoFileName;
+                if (gameState.selectedSong.endsWith('.mp4')) {
+                    // 이미 mp4 파일인 경우 (Your Idol, Free)
+                    videoFileName = gameState.selectedSong;
+                } else {
+                    // mp3 파일인 경우 mp4로 변경
+                    videoFileName = gameState.selectedSong.replace('.mp3', '.mp4');
+                }
+                
+                video.src = videoFileName;
+                video.style.display = 'block';
+                gameState.video = video;
+                // 비디오의 오디오를 사용하므로 게임 로직에서도 비디오를 오디오로 참조
+                gameState.audio = video;
+                
+                // 오디오 요소는 사용하지 않음
+                audio.src = '';
+                audio.muted = true;
+                
+                video.oncanplaythrough = () => {
+                    // 배속 설정
+                    video.playbackRate = gameState.playbackRate;
+                    
+                    if (!gameState.notesGenerated) {
+                        generateNotes();
+                    }
+                    
+                    // 비디오 재생 시작
+                    video.play().catch(err => {
+                        console.error('Video play failed:', err);
+                        setTimeout(() => {
+                            video.play().catch(e => {
+                                console.error('Video play retry failed:', e);
+                            });
+                        }, 500);
+                    });
+                };
+                
+                gameState.audioOffset = 0;
+                
+                video.onplay = () => {
+                    gameState.audioStartTime = Date.now() - (video.currentTime * 1000);
+                    gameState.gameStartTime = gameState.audioStartTime;
+                };
+                
+                // 비디오 종료 시 결과 화면
+                video.onended = () => {
+                    // 비디오 완전히 정지
+                    video.pause();
+                    video.currentTime = 0;
+                    // 노트 체크 인터벌 제거
+                    if (gameState.noteCheckInterval) {
+                        clearInterval(gameState.noteCheckInterval);
+                        gameState.noteCheckInterval = null;
+                    }
+                    // 이벤트 리스너 제거
+                    window.removeEventListener('keydown', handleKeyPress);
+                    window.removeEventListener('keyup', handleKeyRelease);
+                    // 결과 화면 표시
+                    setTimeout(() => showResult(), 1000);
+                };
+                
+                // 비디오 로드 시작
+                video.load();
+            }
+            
+            // 키보드 이벤트 리스너
+            window.addEventListener('keydown', handleKeyPress);
+            window.addEventListener('keyup', handleKeyRelease);
+            
+            // 노트 체크 인터벌
+            if (gameState.noteCheckInterval) {
+                clearInterval(gameState.noteCheckInterval);
+            }
+            gameState.noteCheckInterval = setInterval(checkNotes, 16);
+            
+            // 오디오 종료 시 결과 화면 (오디오 전용 곡을 위한 백업)
+            if (gameState.audio && !gameState.video) {
+                gameState.audio.onended = () => {
+                    // 오디오 완전히 정지
+                    gameState.audio.pause();
+                    gameState.audio.currentTime = 0;
+                    // 노트 체크 인터벌 제거
+                    if (gameState.noteCheckInterval) {
+                        clearInterval(gameState.noteCheckInterval);
+                        gameState.noteCheckInterval = null;
+                    }
+                    // 이벤트 리스너 제거
+                    window.removeEventListener('keydown', handleKeyPress);
+                    window.removeEventListener('keyup', handleKeyRelease);
+                    // 결과 화면 표시
+                    setTimeout(() => showResult(), 1000);
+                };
+            }
+        }
+
+        // 연타 섹션 정의 (곡의 특정 시간에 연타 패턴 추가)
+        function getRapidFireSections(totalTime) {
+            const sections = [];
+            
+            // Easy 모드: 연타 섹션을 줄임 (1개만)
+            if (gameState.difficulty === 'easy') {
+                const sectionTimes = [
+                    totalTime * 0.5   // 50%
+                ];
+                
+                sectionTimes.forEach((startTime) => {
+                    const sectionLength = 3000;  // 연타 섹션 길이도 줄임
+                    if (startTime + sectionLength < totalTime) {
+                        sections.push({
+                            start: startTime,
+                            end: startTime + sectionLength,
+                            intensity: 'normal'
+                        });
+                    }
+                });
+            } else {
+                // 다른 난이도: 원래대로 여러 지점에 연타 섹션 추가
+                const sectionTimes = [
+                    totalTime * 0.2,   // 20%
+                    totalTime * 0.35,  // 35%
+                    totalTime * 0.5,   // 50%
+                    totalTime * 0.65,  // 65%
+                    totalTime * 0.8    // 80%
+                ];
+                
+                sectionTimes.forEach((startTime, index) => {
+                    // 연타 섹션 길이: 난이도에 따라 다름
+                    let sectionLength;
+                    let intensity;
+                    
+                    if (gameState.difficulty === 'superhard') {
+                        sectionLength = 3000;
+                        intensity = 'high';
+                    } else if (gameState.difficulty === 'hard') {
+                        sectionLength = 3500;
+                        intensity = 'normal';
+                    } else if (gameState.difficulty === 'normal') {
+                        sectionLength = 4000;
+                        intensity = 'normal';
+                    } else {
+                        sectionLength = 5000;
+                        intensity = 'normal';
+                    }
+                    
+                    if (startTime + sectionLength < totalTime) {
+                        sections.push({
+                            start: startTime,
+                            end: startTime + sectionLength,
+                            intensity: intensity
+                        });
+                    }
+                });
+            }
+            
+            // 시간 순으로 정렬
+            sections.sort((a, b) => a.start - b.start);
+            return sections;
+        }
+        
+        // 연타 패턴 (asasasaass 같은 빠른 연속 노트)
+        const rapidFirePatterns = [
+            [0, 1, 0, 1, 0, 1, 0, 0, 1, 1],  // asasasaass
+            [0, 1, 2, 3, 0, 1, 2, 3],        // asdfasdf
+            [3, 2, 1, 0, 3, 2, 1, 0],        // fdsafdsa
+            [0, 0, 1, 1, 2, 2, 3, 3],        // aassddff
+            [0, 2, 1, 3, 0, 2, 1, 3],        // adsfadsf
+            [1, 0, 3, 2, 1, 0, 3, 2]         // safdsafd
+        ];
+        
+        // 연타 노트 생성 (여러 레인을 빠르게 번갈아가며)
+        function generateRapidFireNotes(startTime, duration, intensity, patternIndex, songBeatInterval) {
+            const notes = [];
+            // 연타 간격: high는 16분음표 (songBeatInterval/4), normal은 8분음표 (songBeatInterval/2)
+            const rapidInterval = intensity === 'high' ? songBeatInterval / 4 : songBeatInterval / 2;
+            const noteCount = Math.floor(duration / rapidInterval);
+            
+            // 연타 패턴 선택
+            const pattern = rapidFirePatterns[patternIndex % rapidFirePatterns.length];
+            let patternPos = 0;
+            
+            for (let i = 0; i < noteCount; i++) {
+                const lane = pattern[patternPos % pattern.length];
+                notes.push({
+                    lane: lane,
+                    time: startTime + (i * rapidInterval),
+                    created: false
+                });
+                patternPos++;
+            }
+            
+            return notes;
+        }
+
+        // 노트 생성
+        function generateNotes() {
+            // 이미 생성되었다면 중복 생성 방지
+            if (gameState.notesGenerated) return;
+            gameState.notesGenerated = true;
+            
+            const settings = difficultySettings[gameState.difficulty];
+            const audio = gameState.audio;
+            
+            // 선택된 곡의 설정 가져오기
+            const songConfig = songConfigs[gameState.selectedSong] || {
+                patterns: defaultBeatPatterns,
+                patternChangeBeats: 8,
+                bpm: BPM,
+                style: 'default'
+            };
+            
+            // 곡의 실제 BPM 사용
+            const songBPM = songConfig.bpm;
+            const songBeatInterval = (60 / songBPM) * 1000;
+            
+            // 난이도별 박자 간격 계산 (곡의 BPM 기준)
+            let baseBeatInterval;
+            if (settings.beatInterval === BEAT_INTERVAL * 2) {
+                baseBeatInterval = songBeatInterval * 2;  // Easy: 매 2박마다
+            } else if (settings.beatInterval === BEAT_INTERVAL) {
+                baseBeatInterval = songBeatInterval;  // Normal: 매 박마다
+            } else if (settings.beatInterval === BEAT_INTERVAL * 0.85) {
+                baseBeatInterval = songBeatInterval * 0.85;  // Hard: 매 박마다 (난이도 낮춤)
+            } else {
+                baseBeatInterval = songBeatInterval / 2;  // Super Hard: 매 반박마다
+            }
+            
+            const totalTime = audio.duration * 1000;
+            
+            // 연타 섹션 가져오기
+            const rapidFireSections = getRapidFireSections(totalTime);
+            
+            // 시작 시간 계산 (오디오 버퍼링 고려하여 약간의 여유)
+            // 첫 노트를 더 늦게 시작하여 플레이어가 준비할 수 있게 함
+            const startOffset = 3000;
+            let time = startOffset;
+            let beatCount = 0;
+            let patternIndex = 0;
+            let patternPosition = 0;
+            let rapidFirePatternIndex = 0;
+            
+            // 곡별 패턴 사용
+            const beatPatterns = songConfig.patterns;
+            const patternChangeInterval = songConfig.patternChangeBeats;
+            
+            // 시작 부분: 처음 몇 개 노트는 간격을 더 넓혀서 부드럽게 시작
+            let isStartPhase = true;
+            const startPhaseDuration = 5000; // 처음 5초간
+            const startPhaseEnd = startOffset + startPhaseDuration;
+            
+            while (time < totalTime - 3000) {
+                // 연타 섹션인지 확인
+                const inRapidFire = rapidFireSections.find(section => 
+                    time >= section.start && time < section.end
+                );
+                
+                if (inRapidFire) {
+                    // 연타 섹션: 여러 레인을 빠르게 번갈아가며 연타 생성
+                    const sectionRemaining = inRapidFire.end - time;
+                    const rapidNotes = generateRapidFireNotes(
+                        time,
+                        sectionRemaining,
+                        inRapidFire.intensity,
+                        rapidFirePatternIndex,
+                        songBeatInterval
+                    );
+                    
+                    rapidNotes.forEach(note => {
+                        gameState.notes.push(note);
+                        gameState.totalNotes++;
+                    });
+                    
+                    // 연타 섹션 끝까지 건너뛰기
+                    time = inRapidFire.end;
+                    rapidFirePatternIndex++; // 다음 연타 섹션에서는 다른 패턴 사용
+                    patternPosition++;
+                    beatCount += Math.floor(sectionRemaining / songBeatInterval);
+                } else {
+                    // 일반 노트 생성 (곡별 패턴 사용)
+                    const pattern = beatPatterns[patternIndex % beatPatterns.length];
+                    const lane = pattern[patternPosition % pattern.length];
+                    
+                    // 일반 노트 생성
+                    gameState.notes.push({
+                        lane: lane,
+                        time: time,
+                        created: false,
+                        isFake: false  // 진짜 노트
+                    });
+                    gameState.totalNotes++;
+                    
+                    // Hard 모드: 가짜 노트 생성 (일관된 위치, 간격 기반)
+                    if (gameState.difficulty === 'hard' && !isStartPhase) {
+                        // Hard 모드: 5개 노트마다 1개 가짜 노트 생성
+                        if (beatCount % 5 === 0) {
+                            // 가짜 노트: 진짜 노트와 비슷한 타이밍이지만 다른 레인
+                            // 레인도 시간 기반으로 일관되게 결정
+                            const fakeLaneValue = ((time * 11 + lane * 5) % 4);
+                            let fakeLane = Math.floor(fakeLaneValue);
+                            
+                            // 같은 레인이 아닌 경우만
+                            if (fakeLane === lane) {
+                                fakeLane = (fakeLane + 1) % 4;
+                            }
+                            
+                            // 시간 오프셋도 일관되게 결정 (±100ms 범위)
+                            const timeOffset = ((time * 13) % 200) - 100;
+                            
+                            gameState.notes.push({
+                                lane: fakeLane,
+                                time: time + timeOffset,
+                                created: false,
+                                isFake: true  // 가짜 노트
+                            });
+                            gameState.totalNotes++;
+                        }
+                    }
+                    
+                    // Super Hard 모드: 가짜 노트 생성 (일관된 위치, 패턴 기반, 더 많이 생성)
+                    if (gameState.difficulty === 'superhard' && !isStartPhase) {
+                        // Super Hard 모드: 2개 노트마다 1개 가짜 노트 생성
+                        if (beatCount % 2 === 0) {
+                            // 가짜 노트: 진짜 노트와 비슷한 타이밍이지만 다른 레인
+                            // Super Hard는 다른 패턴으로 레인 결정
+                            const fakeLaneValue = ((time * 17 + lane * 7) % 4);
+                            let fakeLane = Math.floor(fakeLaneValue);
+                            
+                            // 같은 레인이 아닌 경우만
+                            if (fakeLane === lane) {
+                                fakeLane = (fakeLane + 1) % 4;
+                            }
+                            
+                            // Super Hard는 시간 오프셋 범위를 더 넓게 (±150ms 범위)
+                            const timeOffset = ((time * 19) % 300) - 150;
+                            
+                            gameState.notes.push({
+                                lane: fakeLane,
+                                time: time + timeOffset,
+                                created: false,
+                                isFake: true  // 가짜 노트
+                            });
+                            gameState.totalNotes++;
+                            
+                            // Super Hard 모드: 때때로 추가 가짜 노트 생성 (3개마다 1번)
+                            if (beatCount % 3 === 0) {
+                                const fakeLane2Value = ((time * 23 + lane * 11) % 4);
+                                let fakeLane2 = Math.floor(fakeLane2Value);
+                                
+                                // 진짜 노트와 첫 번째 가짜 노트와 다른 레인
+                                if (fakeLane2 === lane || fakeLane2 === fakeLane) {
+                                    fakeLane2 = (fakeLane2 + 2) % 4;
+                                }
+                                
+                                const timeOffset2 = ((time * 29) % 300) - 150;
+                                
+                                gameState.notes.push({
+                                    lane: fakeLane2,
+                                    time: time + timeOffset2,
+                                    created: false,
+                                    isFake: true  // 가짜 노트
+                                });
+                                gameState.totalNotes++;
+                            }
+                        }
+                    }
+                    
+                    // 시작 단계 체크
+                    if (time > startPhaseEnd) {
+                        isStartPhase = false;
+                    }
+                    
+                    // 난이도에 따라 노트 생성 빈도 조절
+                    if (settings.notesPerBeat === 1.5) {
+                        // Super Hard: 가끔 한 박자에 2개 노트 (40% 확률)
+                        const probability = isStartPhase ? 0.2 : 0.4;
+                        if (Math.random() < probability) {
+                            const currentPattern = beatPatterns[patternIndex % beatPatterns.length];
+                            const lane2 = currentPattern[(patternPosition + 1) % currentPattern.length];
+                            gameState.notes.push({
+                                lane: lane2,
+                                time: time + baseBeatInterval / 2,
+                                created: false,
+                                isFake: false  // 진짜 노트
+                            });
+                            gameState.totalNotes++;
+                            patternPosition++;
+                        }
+                    } else if (settings.notesPerBeat > 1 && settings.notesPerBeat < 1.5) {
+                        // Hard: 가끔 한 박자에 2개 노트
+                        // 시작 단계에서는 확률을 낮춰서 부드럽게 시작
+                        const probability = isStartPhase ? 0.15 : 0.25;
+                        if (Math.random() < probability) {
+                            const currentPattern = beatPatterns[patternIndex % beatPatterns.length];
+                            const lane2 = currentPattern[(patternPosition + 1) % currentPattern.length];
+                            gameState.notes.push({
+                                lane: lane2,
+                                time: time + baseBeatInterval / 2,
+                                created: false,
+                                isFake: false  // 진짜 노트
+                            });
+                            gameState.totalNotes++;
+                            patternPosition++;
+                        }
+                    }
+                    
+                    // 다음 박자로 이동
+                    beatCount++;
+                    patternPosition++;
+                    
+                    // 시작 단계에서는 간격을 약간 더 넓혀서 부드럽게 시작
+                    if (isStartPhase && settings.beatInterval !== BEAT_INTERVAL / 2) {
+                        // 시작 단계에서는 간격을 1.1배로 늘림 (Super Hard 제외)
+                        // Hard 모드는 1.1배로 살짝만 늘려서 자연스럽게 시작
+                        time += baseBeatInterval * 1.1;
+                    } else {
+                        time += baseBeatInterval;
+                    }
+                }
+                
+                // 곡별 설정에 따라 패턴 변경
+                if (beatCount % patternChangeInterval === 0) {
+                    patternIndex = (patternIndex + 1) % beatPatterns.length;
+                    patternPosition = 0; // 패턴 위치 리셋
+                }
+            }
+            
+            // 노트를 시간 순으로 정렬
+            gameState.notes.sort((a, b) => a.time - b.time);
+        }
+
+        // 노트 체크 및 생성
+        function checkNotes() {
+            const audio = gameState.audio;
+            if (!audio || audio.paused || audio.ended) return;
+            
+            // 오디오의 실제 currentTime을 사용하여 더 정확한 타이밍
+            // 오디오 재생 시간을 밀리초로 변환
+            const audioCurrentTime = audio.currentTime * 1000;
+            
+            // 게임 시작 시간과 오디오 시간을 정확히 동기화
+            const currentTime = audioCurrentTime;
+            
+            // 새 노트 생성 (난이도별 fallDuration에 맞춰 생성 타이밍 조정, 배속 고려)
+            const settings = difficultySettings[gameState.difficulty];
+            // 배속이 빠르면 노트도 빠르게 떨어지므로 더 일찍 생성해야 함
+            const adjustedFallDuration = settings.fallDuration / gameState.playbackRate;
+            const fallDurationMs = adjustedFallDuration * 1000;
+            
+            gameState.notes.forEach(note => {
+                if (!note.created && currentTime >= note.time - fallDurationMs) {
+                    // 노트 생성 시 목표 시간 전달 (박자 동기화용)
+                    const noteData = createNote(note.lane, note.time, note.isFake || false);
+                    note.created = true;
+                }
+            });
+            
+            // 판정선을 지나친 노트 처리 (역순으로 순회하여 안전하게 제거)
+            for (let i = gameState.activeNotes.length - 1; i >= 0; i--) {
+                const note = gameState.activeNotes[i];
+                if (note.hit) continue;
+                
+                const noteElement = note.element;
+                const rect = noteElement.getBoundingClientRect();
+                const laneRect = noteElement.parentElement.getBoundingClientRect();
+                
+                // 판정선을 지나쳤으면 처리
+                if (rect.top > laneRect.bottom - 40) {
+                    if (note.isFake) {
+                        // 가짜 노트는 그냥 제거 (Miss 처리 안 함)
+                        note.hit = true;
+                        noteElement.remove();
+                        const noteIndex = gameState.activeNotes.findIndex(n => n === note);
+                        if (noteIndex !== -1) {
+                            gameState.activeNotes.splice(noteIndex, 1);
+                        }
+                    } else {
+                        // 일반 진짜 노트는 Miss 처리
+                        judgeNote(note, 'miss', i);
+                    }
+                }
+            }
+        }
+
+        // 노트 생성
+        function createNote(lane, targetTime, isFake) {
+            const laneElement = document.querySelectorAll('.lane')[lane];
+            const note = document.createElement('div');
+            
+            // 난이도별 노트 속도 적용 (배속에 맞춰 조정)
+            const settings = difficultySettings[gameState.difficulty];
+            // 배속이 빠르면 노트도 빠르게, 배속이 느리면 노트도 느리게
+            const adjustedFallDuration = settings.fallDuration / gameState.playbackRate;
+            note.style.animationDuration = `${adjustedFallDuration}s`;
+            
+            // 기본 note 클래스와 falling 클래스 바로 추가
+            note.className = 'note falling';
+            
+            // 가짜 노트인 경우 반투명 스타일 적용
+            if (isFake) {
+                note.classList.add('fake');
+            }
+            
+            
+            // 목표 시간 저장 (박자 동기화용)
+            if (targetTime !== undefined) {
+                note.dataset.targetTime = targetTime;
+            }
+            
+            // DOM에 추가
+            laneElement.appendChild(note);
+            
+            const noteData = {
+                element: note,
+                lane: lane,
+                hit: false,
+                targetTime: targetTime,  // 박자 동기화를 위한 목표 시간
+                isFake: isFake || false  // 가짜 노트 여부
+            };
+            
+            gameState.activeNotes.push(noteData);
+            
+            return noteData;
+        }
+
+        // 키 입력 처리
+        function handleKeyPress(event) {
+            const key = event.key.toLowerCase();
+            if (!gameState.keys.includes(key)) return;
+            
+            // 키 시각적 피드백
+            const keyElement = document.getElementById(`key-${key}`);
+            keyElement.classList.add('pressed');
+            
+            // 눌린 키 추가
+            gameState.pressedKeys.add(key);
+            
+            // 해당 레인의 노트 체크
+            const laneIndex = gameState.keyMap[key];
+            
+            checkNoteHit(laneIndex);
+        }
+
+        function handleKeyRelease(event) {
+            const key = event.key.toLowerCase();
+            if (!gameState.keys.includes(key)) return;
+            
+            const keyElement = document.getElementById(`key-${key}`);
+            keyElement.classList.remove('pressed');
+            
+            // 눌린 키 제거
+            gameState.pressedKeys.delete(key);
+        }
+
+        // 노트 히트 체크
+        function checkNoteHit(laneIndex) {
+            const audio = gameState.audio;
+            if (!audio || audio.paused || audio.ended) return;
+            
+            let closestNote = null;
+            let closestDistance = Infinity;
+            let closestIndex = -1;
+            let isOnTextCenter = false;
+            
+            // 레인 요소 가져오기
+            const laneElement = document.querySelectorAll('.lane')[laneIndex];
+            if (!laneElement) return;
+            
+            // A, S, D, F 박스 요소 가져오기
+            const keyElement = laneElement.querySelector('.lane-key');
+            if (!keyElement) return;
+            
+            const keyRect = keyElement.getBoundingClientRect();
+            
+            // 글씨 중간점 계산
+            const boxCenterX = (keyRect.left + keyRect.right) / 2;
+            const boxCenterY = (keyRect.top + keyRect.bottom) / 2;
+            
+            gameState.activeNotes.forEach((note, index) => {
+                if (note.hit || note.lane !== laneIndex) return;
+                
+                // 가짜 노트는 판정하지 않음
+                if (note.isFake) return;
+                
+                
+                // 화면 위치 기반 판정
+                const noteElement = note.element;
+                const noteRect = noteElement.getBoundingClientRect();
+                
+                // 노트가 박스에 닿는지 확인 (조금이라도 닿거나 박스 안으로 들어오는 경우)
+                const isInBox = !(noteRect.bottom < keyRect.top || noteRect.top > keyRect.bottom || 
+                                noteRect.right < keyRect.left || noteRect.left > keyRect.right);
+                
+                if (!isInBox) return;  // 박스와 겹치지 않으면 판정하지 않음
+                
+                // 노트 중심점
+                const noteCenterX = (noteRect.left + noteRect.right) / 2;
+                const noteCenterY = (noteRect.top + noteRect.bottom) / 2;
+                
+                // 글씨 중간점과 노트 중심점의 거리
+                const distanceX = Math.abs(noteCenterX - boxCenterX);
+                const distanceY = Math.abs(noteCenterY - boxCenterY);
+                const distanceToCenter = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+                
+                // 글씨 중간점에 완전히 닿았는지 확인
+                const textAreaSize = 10;  // 글씨 중간점 주변 영역 (픽셀)
+                const isOnCenter = distanceX < textAreaSize && distanceY < textAreaSize;
+                
+                // 가장 가까운 노트 찾기 (글씨 중간점에 닿은 노트 우선)
+                if (isOnCenter) {
+                    // Perfect: 글씨 중간점에 완전히 닿았을 때
+                    if (!closestNote || !isOnTextCenter) {
+                        closestNote = note;
+                        closestIndex = index;
+                        closestDistance = distanceToCenter;
+                        isOnTextCenter = true;
+                    }
+                } else if (isInBox) {
+                    // Good: 박스에 닿았지만 글씨 중간점에는 닿지 않음
+                    if (!closestNote || !isOnTextCenter) {
+                        closestNote = note;
+                        closestIndex = index;
+                        closestDistance = distanceToCenter;
+                        isOnTextCenter = false;
+                    }
+                }
+            });
+            
+            if (closestNote) {
+                // 글씨 중간점에 완전히 닿았으면 Perfect, 박스에만 닿았으면 Good
+                const judgment = isOnTextCenter ? 'perfect' : 'good';
+                judgeNote(closestNote, judgment, closestIndex);
+            } else {
+                // 노트가 박스 안으로 들어오지 않은 상태에서 키를 누르면 Miss
+                // 가장 가까운 노트 찾기
+                let missNote = null;
+                let missDistance = Infinity;
+                let missIndex = -1;
+                
+                gameState.activeNotes.forEach((note, index) => {
+                    if (note.hit || note.lane !== laneIndex) return;
+                    
+                    // 가짜 노트는 판정하지 않음
+                    if (note.isFake) return;
+                    
+                    // 화면 위치 기반 판정
+                    const noteElement = note.element;
+                    const noteRect = noteElement.getBoundingClientRect();
+                    
+                    // 노트 중심점
+                    const noteCenterX = (noteRect.left + noteRect.right) / 2;
+                    const noteCenterY = (noteRect.top + noteRect.bottom) / 2;
+                    
+                    // 글씨 중간점과 노트 중심점의 거리
+                    const distanceX = Math.abs(noteCenterX - boxCenterX);
+                    const distanceY = Math.abs(noteCenterY - boxCenterY);
+                    const distanceToCenter = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+                    
+                    // 가장 가까운 노트 찾기
+                    if (distanceToCenter < missDistance) {
+                        missNote = note;
+                        missDistance = distanceToCenter;
+                        missIndex = index;
+                    }
+                });
+                
+                if (missNote) {
+                    // 가장 가까운 노트를 Miss로 판정하고 제거
+                    judgeNote(missNote, 'miss', missIndex);
+                } else {
+                    // 노트가 없으면 점수만 100점 감소
+                    gameState.score = Math.max(0, gameState.score - 100);
+                    updateUI();
+                }
+            }
+        }
+
+        // 노트 판정
+        function judgeNote(note, judgment, index) {
+            // Miss 판정 시 note가 null일 수 있음
+            if (note) {
+                if (note.hit) return;
+                note.hit = true;
+                
+                // 판정 표시
+                showJudgment(note.element.parentElement, judgment);
+            } else {
+                // Miss 판정 표시 (레인 요소 사용)
+                const laneElement = document.querySelectorAll('.lane')[index >= 0 ? index : 0];
+                if (laneElement) {
+                    showJudgment(laneElement, judgment);
+                }
+            }
+            
+            // 점수 계산
+            let points = 0;
+            if (judgment === 'perfect') {
+                points = 100 * (1 + gameState.combo * 0.1);
+                gameState.perfectCount++;
+            } else if (judgment === 'good') {
+                points = 50 * (1 + gameState.combo * 0.1);
+                gameState.goodCount++;
+            } else {
+                gameState.combo = 0;
+                gameState.missCount++;
+                // Miss 발생 시 목숨 감소
+                gameState.lives--;
+                if (gameState.lives <= 0) {
+                    // 게임 오버 처리
+                    gameState.lives = 0;
+                    gameOver();
+                }
+            }
+            
+            if (judgment !== 'miss') {
+                gameState.combo++;
+                gameState.maxCombo = Math.max(gameState.maxCombo, gameState.combo);
+                
+                // 콤보 4마다 목숨 회복
+                if (gameState.combo % 4 === 0 && gameState.combo > 0) {
+                    if (gameState.lives < gameState.maxLives) {
+                        gameState.lives++;
+                    }
+                }
+            }
+            
+            gameState.score += Math.floor(points);
+            updateUI();
+            
+            // 노트 제거 (note가 있는 경우에만)
+            if (note) {
+                note.element.classList.remove('falling');
+                note.element.classList.remove('holding');
+                note.element.classList.add('hit');
+                setTimeout(() => {
+                    if (note.element.parentElement) {
+                        note.element.remove();
+                    }
+                    const noteIndex = gameState.activeNotes.findIndex(n => n === note);
+                    if (noteIndex !== -1) {
+                        gameState.activeNotes.splice(noteIndex, 1);
+                    }
+                    // 홀드 노트인 경우 activeHoldNotes에서도 제거
+                    if (note.isHold) {
+                        const holdIndex = gameState.activeHoldNotes.findIndex(n => n === note);
+                        if (holdIndex !== -1) {
+                            gameState.activeHoldNotes.splice(holdIndex, 1);
+                        }
+                    }
+                }, 300);
+            }
+        }
+
+        // 판정 표시
+        function showJudgment(laneElement, judgment) {
+            const judgmentElement = document.createElement('div');
+            judgmentElement.className = `judgment ${judgment}`;
+            judgmentElement.textContent = judgment.toUpperCase();
+            
+            const rect = laneElement.getBoundingClientRect();
+            judgmentElement.style.left = rect.left + rect.width / 2 - 80 + 'px';
+            judgmentElement.style.bottom = '120px';
+            
+            document.body.appendChild(judgmentElement);
+            
+            setTimeout(() => {
+                judgmentElement.remove();
+            }, 1000);
+        }
+
+        // UI 업데이트
+        function updateUI() {
+            document.getElementById('score').textContent = gameState.score;
+            document.getElementById('accuracy').textContent = calculateAccuracy() + '%';
+            document.getElementById('lives').textContent = gameState.lives;
+            
+            // 목숨이 적으면 빨간색으로 표시
+            const livesDisplay = document.getElementById('lives-display');
+            if (gameState.lives <= 2) {
+                livesDisplay.style.color = '#ef4444';
+            } else if (gameState.lives <= 3) {
+                livesDisplay.style.color = '#fbbf24';
+            } else {
+                livesDisplay.style.color = 'white';
+            }
+            
+            const comboDisplay = document.getElementById('combo-display');
+            if (gameState.combo > 0) {
+                comboDisplay.textContent = `${gameState.combo} COMBO!`;
+            } else {
+                comboDisplay.textContent = '';
+            }
+        }
+        
+        // 게임 오버 처리
+        function gameOver() {
+            gameState.isGameOver = true;  // 게임 오버 플래그 설정
+            
+            const audio = gameState.audio;
+            if (audio) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+            
+            // 비디오도 일시정지 및 리셋
+            if (gameState.video) {
+                gameState.video.pause();
+                gameState.video.currentTime = 0;
+            }
+            
+            // 노트 체크 인터벌 제거
+            if (gameState.noteCheckInterval) {
+                clearInterval(gameState.noteCheckInterval);
+                gameState.noteCheckInterval = null;
+            }
+            
+            // 이벤트 리스너 제거
+            window.removeEventListener('keydown', handleKeyPress);
+            window.removeEventListener('keyup', handleKeyRelease);
+            
+            // 결과 화면 표시
+            setTimeout(() => {
+                showResult();
+            }, 500);
+        }
+
+        // 정확도 계산
+        function calculateAccuracy() {
+            const hit = gameState.perfectCount + gameState.goodCount;
+            const total = hit + gameState.missCount;
+            if (total === 0) return 100;
+            return ((hit / total) * 100).toFixed(1);
+        }
+
+
+        // 결과 화면
+        function showResult() {
+            // 노트 체크 인터벌 제거
+            if (gameState.noteCheckInterval) {
+                clearInterval(gameState.noteCheckInterval);
+                gameState.noteCheckInterval = null;
+            }
+            
+            // 모든 미디어 완전히 정지 및 이벤트 리스너 제거
+            if (gameState.audio) {
+                gameState.audio.pause();
+                gameState.audio.currentTime = 0;
+                gameState.audio.onended = null;
+                gameState.audio.oncanplaythrough = null;
+                gameState.audio.onplay = null;
+                if (gameState.audio.src) {
+                    gameState.audio.src = '';
+                }
+            }
+            if (gameState.video) {
+                gameState.video.pause();
+                gameState.video.currentTime = 0;
+                gameState.video.onended = null;
+                gameState.video.oncanplaythrough = null;
+                gameState.video.onplay = null;
+                if (gameState.video.src) {
+                    gameState.video.src = '';
+                }
+            }
+            
+            // 비디오 요소 직접 정지 및 이벤트 제거
+            const video = document.getElementById('game-video');
+            if (video) {
+                video.pause();
+                video.currentTime = 0;
+                video.style.display = 'none';
+                video.onended = null;
+                video.oncanplaythrough = null;
+                video.onplay = null;
+                video.src = '';
+            }
+            
+            // 오디오 요소 직접 정지 및 이벤트 제거
+            const audio = document.getElementById('game-audio');
+            if (audio) {
+                audio.pause();
+                audio.currentTime = 0;
+                audio.onended = null;
+                audio.oncanplaythrough = null;
+                audio.onplay = null;
+                audio.src = '';
+            }
+            
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'flex';
+            
+            // 성공/실패 판정
+            const resultStatus = document.getElementById('result-status');
+            if (gameState.lives > 0 && !gameState.isGameOver) {
+                // 목숨이 남아있고 게임 오버가 아니면 성공
+                resultStatus.textContent = '성공';
+                resultStatus.className = 'result-status success';
+            } else {
+                // 목숨이 0이거나 게임 오버면 실패
+                resultStatus.textContent = '실패';
+                resultStatus.className = 'result-status failure';
+            }
+            
+            document.getElementById('final-score').textContent = gameState.score;
+            document.getElementById('final-accuracy').textContent = calculateAccuracy() + '%';
+            document.getElementById('max-combo').textContent = gameState.maxCombo;
+            document.getElementById('perfect-count').textContent = gameState.perfectCount;
+            document.getElementById('good-count').textContent = gameState.goodCount;
+            document.getElementById('miss-count').textContent = gameState.missCount;
+            
+            // 이벤트 리스너 제거
+            window.removeEventListener('keydown', handleKeyPress);
+            window.removeEventListener('keyup', handleKeyRelease);
+        }
+
+        // 다시하기
+        function retryGame() {
+            // 결과 화면 숨기기
+            document.getElementById('result-screen').style.display = 'none';
+            
+            // 미디어 완전히 정지 및 이벤트 리스너 제거
+            if (gameState.audio) {
+                gameState.audio.pause();
+                gameState.audio.currentTime = 0;
+                gameState.audio.onended = null;
+                gameState.audio.oncanplaythrough = null;
+                gameState.audio.onplay = null;
+                if (gameState.audio.src) {
+                    gameState.audio.src = '';
+                }
+            }
+            if (gameState.video) {
+                gameState.video.pause();
+                gameState.video.currentTime = 0;
+                gameState.video.onended = null;
+                gameState.video.oncanplaythrough = null;
+                gameState.video.onplay = null;
+                if (gameState.video.src) {
+                    gameState.video.src = '';
+                }
+            }
+            
+            const video = document.getElementById('game-video');
+            if (video) {
+                video.pause();
+                video.currentTime = 0;
+                video.style.display = 'none';
+                video.onended = null;
+                video.oncanplaythrough = null;
+                video.onplay = null;
+                video.src = '';
+            }
+            
+            const audio = document.getElementById('game-audio');
+            if (audio) {
+                audio.pause();
+                audio.currentTime = 0;
+                audio.onended = null;
+                audio.oncanplaythrough = null;
+                audio.onplay = null;
+                audio.src = '';
+            }
+            
+            // 노트 체크 인터벌 제거
+            if (gameState.noteCheckInterval) {
+                clearInterval(gameState.noteCheckInterval);
+                gameState.noteCheckInterval = null;
+            }
+            
+            // 게임 상태 초기화 (곡, 난이도, 배속은 유지)
+            gameState.audio = null;
+            gameState.video = null;
+            gameState.notesGenerated = false;
+            
+            // 게임 시작 (현재 선택된 곡, 난이도, 배속 유지)
+            startGame();
+        }
+
+        // 메뉴로 돌아가기
+        function backToMenu() {
+            // 모든 미디어 완전히 정지 및 이벤트 리스너 제거
+            if (gameState.audio) {
+                gameState.audio.pause();
+                gameState.audio.currentTime = 0;
+                // 오디오 이벤트 리스너 제거
+                gameState.audio.onended = null;
+                gameState.audio.oncanplaythrough = null;
+                gameState.audio.onplay = null;
+            }
+            
+            if (gameState.video) {
+                gameState.video.pause();
+                gameState.video.currentTime = 0;
+                // 비디오 이벤트 리스너 제거
+                gameState.video.onended = null;
+                gameState.video.oncanplaythrough = null;
+                gameState.video.onplay = null;
+            }
+            
+            // 비디오 요소 직접 정지 및 이벤트 제거
+            const video = document.getElementById('game-video');
+            if (video) {
+                video.pause();
+                video.currentTime = 0;
+                video.style.display = 'none';
+                video.src = '';
+                // 모든 이벤트 리스너 제거
+                video.onended = null;
+                video.oncanplaythrough = null;
+                video.onplay = null;
+            }
+            
+            // 오디오 요소 직접 정지 및 이벤트 제거
+            const audio = document.getElementById('game-audio');
+            if (audio) {
+                audio.pause();
+                audio.currentTime = 0;
+                audio.src = '';
+                // 모든 이벤트 리스너 제거
+                audio.onended = null;
+                audio.oncanplaythrough = null;
+                audio.onplay = null;
+            }
+            
+            // 노트 체크 인터벌 제거
+            if (gameState.noteCheckInterval) {
+                clearInterval(gameState.noteCheckInterval);
+                gameState.noteCheckInterval = null;
+            }
+            
+            // 게임 상태 초기화
+            gameState.audio = null;
+            gameState.video = null;
+            gameState.notesGenerated = false;
+            
+            // 선택 초기화
+            document.querySelectorAll('.song-item').forEach(i => i.classList.remove('selected'));
+            document.querySelectorAll('.difficulty-item').forEach(i => i.classList.remove('selected'));
+            // 배속 기본값으로 복원
+            const speedSlider = document.getElementById('speed-slider');
+            const speedValue = document.getElementById('speed-value');
+            if (speedSlider && speedValue) {
+                speedSlider.value = 1.0;
+                speedValue.textContent = '1.0x';
+            }
+            gameState.selectedSong = null;
+            gameState.difficulty = null;
+            gameState.playbackRate = 1.0;
+            checkStartButton();
+            
+            document.getElementById('result-screen').style.display = 'none';
+            document.getElementById('main-menu').style.display = 'flex';
+        }
+
+        // 초기화
+        createBackgroundEffects();
+    </script>
+</body>
+</html>
+
